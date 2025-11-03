@@ -1,0 +1,19 @@
+{
+  "name": "da-etc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy:prod": "wrangler deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "wrangler": "^4.45.3"
+  },
+  "dependencies": {
+    "html-entities": "^2.6.0"
+  }
+}

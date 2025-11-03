@@ -1,0 +1,5 @@
+name = "da-etc"
+compatibility_date = "2025-11-02"
+main = "src/index.js"
+
+keep_vars = true
