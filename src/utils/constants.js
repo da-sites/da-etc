@@ -4,3 +4,9 @@ export const DEF_HEADERS = {
   'Access-Control-Allow-Headers': '*',
   'Content-Type': 'application/json',
 }
+export const ALLOWED_DOMAINS = [
+  'da.live',
+  'da.page',
+  'aem.page',
+  'aem.live',
+];
