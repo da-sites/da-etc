@@ -9,4 +9,5 @@ export const ALLOWED_DOMAINS = [
   'da.page',
   'aem.page',
   'aem.live',
+  'localhost',
 ];

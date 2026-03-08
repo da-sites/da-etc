@@ -6,8 +6,6 @@ import { DEF_HEADERS } from './utils/constants.js';
 
 export default {
   async fetch(req, env) {
-    console.log('hello');
-
     try {
       switch (req.method) {
         case 'OPTIONS':

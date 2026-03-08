@@ -1,7 +1,6 @@
 import { DEF_HEADERS } from '../utils/constants.js';
 
 export default async function corsRoute({ req }) {
-  console.log('balls');
   const url = new URL(req.url);
   const targetUrl = url.searchParams.get('url');
 
@@ -17,11 +16,9 @@ export default async function corsRoute({ req }) {
   const headers = new Headers(req.headers);
   headers.delete('host');
 
-  const response = await fetch(decodedUrl, {
-    method: req.method,
-    headers,
-    body: req.body
-  });
+  const opts = { method: req.method, headers, body: req.body };
+
+  const response = await fetch(decodedUrl, opts);
 
   const responseHeaders = new Headers(response.headers);
   responseHeaders.set('Access-Control-Allow-Origin', '*');
