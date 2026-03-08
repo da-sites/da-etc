@@ -16,6 +16,8 @@ export default {
           return await postHandler({ req, env });
         case 'GET':
           return await getHandler({ req, env });
+        case 'DELETE':
+          return await postHandler({ req, env });
         default:
           return new Response('Method not allowed', { status: 405, headers: DEF_HEADERS });
       }

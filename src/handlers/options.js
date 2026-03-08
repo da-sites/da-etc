@@ -12,7 +12,7 @@ export default async function optionsHandler({ req }) {
       status: 204,
       headers: {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'HEAD, GET, POST, PUT',
+        'Access-Control-Allow-Methods': 'HEAD, GET, POST, PUT, DELETE',
         'Access-Control-Allow-Headers': '*',
       },
     });
