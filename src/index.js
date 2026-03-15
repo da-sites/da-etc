@@ -14,6 +14,8 @@ export default {
           return await postHandler({ req, env });
         case 'PUT':
           return await postHandler({ req, env });
+        case 'HEAD':
+          return await getHandler({ req, env });
         case 'GET':
           return await getHandler({ req, env });
         case 'DELETE':

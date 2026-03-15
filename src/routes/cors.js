@@ -18,6 +18,11 @@ export default async function corsRoute({ req }) {
 
   const opts = { method: req.method, headers, body: req.body };
 
+  if (req.method === 'HEAD') {
+    opts.redirect = 'manual';
+    opts.body = null;
+  }
+
   const response = await fetch(decodedUrl, opts);
 
   const responseHeaders = new Headers(response.headers);
