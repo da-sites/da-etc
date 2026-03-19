@@ -15,6 +15,7 @@ export default async function corsRoute({ req }) {
 
   const headers = new Headers(req.headers);
   headers.delete('host');
+  headers.delete('origin');
 
   const opts = { method: req.method, headers, body: req.body };
 
