@@ -31,29 +31,57 @@ async function fetchTranslateConfig(org, site, authorization) {
   return { json };
 }
 
-function formatConfig(json) {
-  const config = json.config.data.reduce((acc, row) => {
+function rowsToMap(rows) {
+  return rows.reduce((acc, row) => {
     acc[row.key] = row.value;
     return acc;
   }, {});
+}
 
-  const name = config['translation.service.name'];
-
-  const service = { name, envs: {} };
+function extractEnvs(config) {
+  const envs = {};
   Object.keys(config).forEach((key) => {
-    if (key.startsWith('translation.service.')) {
-      const serviceKey = key.replace('translation.service.', '');
-
-      const [env, prop] = serviceKey.split('.');
-      if (env === 'name' || env === 'all') {
-        return;
-      }
-      service.envs[env] ??= {};
-      service.envs[env][prop] = config[key];
+    if (!key.startsWith('translation.service.')) {
+      return;
     }
+    const [env, prop] = key.replace('translation.service.', '').split('.');
+    if (env === 'name' || env === 'all' || env === 'key') {
+      return;
+    }
+    envs[env] ??= {};
+    envs[env][prop] = config[key];
   });
+  return envs;
+}
 
-  return service;
+function formatConfig(json) {
+  const config = rowsToMap(json.config.data);
+  return {
+    name: config['translation.service.name'],
+    keyPath: config['translation.service.key.path'],
+    envs: extractEnvs(config),
+  };
+}
+
+function formatServiceKey(json) {
+  return extractEnvs(rowsToMap(json.data));
+}
+
+async function fetchServiceKey(keyPath, authorization) {
+  console.log('fetchServiceKey: fetching', keyPath);
+  const resp = await fetch(keyPath, { headers: { Authorization: authorization } });
+  console.log('fetchServiceKey: response status', resp.status, resp.statusText);
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '<unreadable body>');
+    console.log('fetchServiceKey: error body', text);
+    return {
+      error: 'Error fetching service key from DA.',
+      status: resp.status,
+    };
+  }
+  const json = await resp.json();
+  console.log('fetchServiceKey: json keys', Object.keys(json));
+  return { json };
 }
 
 async function fetchTradosToken(service) {
@@ -99,7 +127,25 @@ export default async function intRoute({
 
     const svcCfg = formatConfig(cfgResult.json);
 
-    const tokenResult = await fetchTradosToken(svcCfg.envs[serviceEnv]);
+    console.log('intRoute: svcCfg', { name: svcCfg.name, keyPath: svcCfg.keyPath, envs: Object.keys(svcCfg.envs) });
+
+    let envCreds = svcCfg.envs[serviceEnv] ?? {};
+    if (svcCfg.keyPath) {
+      const keyResult = await fetchServiceKey(svcCfg.keyPath, authorization);
+      if (keyResult.error) {
+        return handleError(keyResult);
+      }
+      const keyEnvs = formatServiceKey(keyResult.json);
+      envCreds = { ...envCreds, ...(keyEnvs[serviceEnv] ?? {}) };
+    }
+
+    console.log('intRoute: envCreds for', serviceEnv, envCreds ? Object.keys(envCreds) : '<none>');
+
+    if (!envCreds?.clientSecret) {
+      return handleError({ error: `Missing credentials for env '${serviceEnv}'.`, status: 400 });
+    }
+
+    const tokenResult = await fetchTradosToken(envCreds);
     if (tokenResult.error) {
       return handleError(tokenResult);
     }
