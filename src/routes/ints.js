@@ -136,7 +136,7 @@ async function fetchLionbridgeToken(service) {
  * `userId` is also accepted as an alias for `userIdentifier`, for configs predating the rename.
  * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
  */
-async function fetchSmartlingToken(service) {
+export async function fetchSmartlingToken(service) {
   const { userIdentifier = service.userId, userSecret, authEndpoint } = service;
   if (!authEndpoint || !userIdentifier || !userSecret) {
     return { error: 'Missing Smartling authEndpoint/userIdentifier/userSecret.', status: 400 };
