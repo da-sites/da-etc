@@ -160,7 +160,7 @@ async function fetchSmartlingToken(service) {
  * username, password)
  * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
  */
-async function fetchGlobalLinkToken(service) {
+export async function fetchGlobalLinkToken(service) {
   const {
     clientId, clientSecret, endpoint, username, password,
   } = service;
