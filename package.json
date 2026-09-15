@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy:prod": "wrangler deploy",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/**/*.test.js"
   },
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
+    "mocha": "^12.0.0",
     "wrangler": "^4.45.3"
   },
   "dependencies": {

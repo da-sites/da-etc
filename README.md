@@ -3,7 +3,7 @@
 A small Cloudflare Worker that hosts a handful of miscellaneous HTTP endpoints
 used by Adobe Document Authoring (DA) / AEM Edge Delivery tooling: a CORS
 proxy, an AI-powered tag extractor, and translation-integration login
-endpoints (Trados, Lionbridge, Smartling).
+endpoints (Trados, Lionbridge, Smartling, GlobalLink).
 
 ## Endpoints
 
@@ -40,12 +40,13 @@ Requires the `OPENAI_API_KEY` binding/secret.
 
 ### `POST /:org/config/:site/integrations/:service/:action`
 
-Server-side integration helper. Currently supports `login` for three services:
+Server-side integration helper. Currently supports `login` for four services:
 
 ```
 POST /:org/config/:site/integrations/trados/login?env=prod
 POST /:org/config/:site/integrations/lionbridge/login?env=prod
 POST /:org/config/:site/integrations/smartling/login?env=prod
+POST /:org/config/:site/integrations/globallink/login?env=prod
 ```
 
 Given an `Authorization` header for the DA admin API, this:
@@ -56,13 +57,15 @@ Given an `Authorization` header for the DA admin API, this:
    fetcher for the requested service (`TOKEN_FETCHERS` in
    `src/routes/ints.js`). Trados and Lionbridge use an OAuth2
    `client_credentials` grant; Smartling exchanges a `userIdentifier`/
-   `userSecret` pair via its own `auth-api/v2/authenticate` endpoint.
+   `userSecret` pair via its own `auth-api/v2/authenticate` endpoint; 
+   GlobalLink uses a resource-owner `password` grant (client
+   id/secret via Basic auth, plus a per-user username/password resolved
+   from the same config).
 
 Returns the token response, or an error/status code if any upstream
-step fails. This keeps the OAuth client secret (or, for Smartling, the
-user secret) out of the browser entirely — the client only ever calls
-this endpoint with its own DA session auth, never the third-party
-service's credentials.
+step fails. This keeps the credentials out of the browser entirely — 
+the client only ever calls this endpoint with its own DA session auth, 
+never the third-party service's credentials.
 
 ## Architecture
 
@@ -76,7 +79,7 @@ src/
   routes/
     cors.js           CORS proxy implementation
     tags.js           Tag extraction route
-    ints.js           Third-party integration routes (Trados, Lionbridge, Smartling)
+    ints.js           Third-party integration routes (Trados, Lionbridge, Smartling, GlobalLink)
   utils/
     constants.js      Default response headers, allowed CORS origins
     html.js           HTML → plain text cleanup
