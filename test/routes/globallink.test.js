@@ -63,6 +63,28 @@ describe('fetchGlobalLinkToken', () => {
     assert.match(result.error, /endpoint/);
   });
 
+  it('returns a 400 when clientId is missing', async () => {
+    const result = await fetchGlobalLinkToken({
+      clientSecret: 'client-secret',
+      endpoint: 'https://api.globallink.example',
+      username: 'user@example.com',
+      password: 'user-password',
+    });
+    assert.equal(result.status, 400);
+    assert.match(result.error, /clientId/);
+  });
+
+  it('returns a 400 when clientSecret is missing', async () => {
+    const result = await fetchGlobalLinkToken({
+      clientId: 'client-id',
+      endpoint: 'https://api.globallink.example',
+      username: 'user@example.com',
+      password: 'user-password',
+    });
+    assert.equal(result.status, 400);
+    assert.match(result.error, /clientSecret/);
+  });
+
   it('returns a 400 when username is missing', async () => {
     const result = await fetchGlobalLinkToken({
       clientId: 'client-id',
