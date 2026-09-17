@@ -147,11 +147,12 @@ async function fetchLionbridgeToken(service) {
  * Lionbridge, Smartling has its own token endpoint and response shape
  * (`{ response: { data: { accessToken, refreshToken, expiresIn } } }`), so
  * the raw response is passed through unchanged rather than reshaped.
- * @param {Object} service - Resolved env credentials (userIdentifier, userSecret, authEndpoint)
+ * @param {Object} service - Resolved env credentials (userIdentifier, userSecret, authEndpoint).
+ * `userId` is also accepted as an alias for `userIdentifier`, for configs predating the rename.
  * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
  */
-async function fetchSmartlingToken(service) {
-  const { userIdentifier, userSecret, authEndpoint } = service;
+export async function fetchSmartlingToken(service) {
+  const { userIdentifier = service.userId, userSecret, authEndpoint } = service;
   if (!authEndpoint || !userIdentifier || !userSecret) {
     return { error: 'Missing Smartling authEndpoint/userIdentifier/userSecret.', status: 400 };
   }
