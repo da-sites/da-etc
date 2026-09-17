@@ -84,16 +84,26 @@ async function fetchServiceKey(keyPath, authorization) {
   return { json };
 }
 
+/**
+ * Exchanges Trados client credentials for an OAuth2 access token.
+ * @param {Object} service - Resolved env credentials (clientId, clientSecret, authEndpoint)
+ * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
+ */
 async function fetchTradosToken(service) {
+  const { clientId, clientSecret, authEndpoint } = service;
+  if (!authEndpoint || !clientId || !clientSecret) {
+    return { error: 'Missing Trados authEndpoint/clientId/clientSecret.', status: 400 };
+  }
+
   const body = JSON.stringify({
-    client_id: service.clientId,
-    client_secret: service.clientSecret,
+    client_id: clientId,
+    client_secret: clientSecret,
     grant_type: 'client_credentials',
     audience: service.audience,
   });
 
   const opts = { ...BASE_OPTS, body };
-  const resp = await fetch(service.authEndpoint, opts);
+  const resp = await fetch(authEndpoint, opts);
   if (!resp.ok) {
     return { error: 'Could not get token', status: resp.status };
   }
@@ -107,10 +117,15 @@ async function fetchTradosToken(service) {
  * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
  */
 async function fetchLionbridgeToken(service) {
+  const { clientId, clientSecret, authEndpoint } = service;
+  if (!authEndpoint || !clientId || !clientSecret) {
+    return { error: 'Missing Lionbridge authEndpoint/clientId/clientSecret.', status: 400 };
+  }
+
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: service.clientId,
-    client_secret: service.clientSecret,
+    client_id: clientId,
+    client_secret: clientSecret,
   });
 
   const opts = {
@@ -118,7 +133,7 @@ async function fetchLionbridgeToken(service) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
   };
-  const resp = await fetch(service.authEndpoint, opts);
+  const resp = await fetch(authEndpoint, opts);
   if (!resp.ok) {
     return { error: 'Could not get token', status: resp.status };
   }
@@ -164,8 +179,8 @@ export async function fetchGlobalLinkToken(service) {
   const {
     clientId, clientSecret, endpoint, username, password,
   } = service;
-  if (!endpoint || !username || !password) {
-    return { error: 'Missing GlobalLink endpoint/username/password.', status: 400 };
+  if (!endpoint || !clientId || !clientSecret || !username || !password) {
+    return { error: 'Missing GlobalLink endpoint/clientId/clientSecret/username/password.', status: 400 };
   }
 
   const body = new URLSearchParams({
@@ -189,11 +204,31 @@ export async function fetchGlobalLinkToken(service) {
   return { json, status: resp.status };
 }
 
+/**
+ * Resolves the site's configured DeepL API key. Unlike Trados/Lionbridge/Smartling/
+ * GlobalLink, DeepL has no OAuth exchange - the API key itself is the long-lived
+ * credential DeepL expects on every request (as `Authorization: DeepL-Auth-Key <key>`).
+ * Routing it through da-etc still keeps the raw key out of the site's editable config
+ * sheet and the browser's own request path, matching the other connectors' security
+ * model, even though there's no token to refresh.
+ * @param {Object} service - Resolved env credentials (apiKey)
+ * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
+ */
+export async function fetchDeepLToken(service) {
+  const { apiKey } = service;
+  if (!apiKey) {
+    return { error: 'Missing DeepL apiKey.', status: 400 };
+  }
+
+  return { json: { access_token: apiKey }, status: 200 };
+}
+
 const TOKEN_FETCHERS = {
   trados: fetchTradosToken,
   lionbridge: fetchLionbridgeToken,
   smartling: fetchSmartlingToken,
   globallink: fetchGlobalLinkToken,
+  deepl: fetchDeepLToken,
 };
 
 function handleError({ error, status }) {
@@ -203,6 +238,7 @@ function handleError({ error, status }) {
 /**
  * Resolves the client credentials for a service/env by fetching the site's
  * translate config and, if configured, a referenced service key document.
+ * Credential presence is validated by each connector's own fetchXToken, not here.
  * @param {string} org - DA org name
  * @param {string} site - DA site name
  * @param {string} authorization - Authorization header value for the DA admin API
@@ -230,10 +266,6 @@ async function fetchEnvCreds(org, site, authorization, serviceEnv) {
   }
 
   console.log('intRoute: envCreds for', serviceEnv, envCreds ? Object.keys(envCreds) : '<none>');
-
-  if (!envCreds?.clientSecret && !envCreds?.userSecret) {
-    return { error: `Missing credentials for env '${serviceEnv}'.`, status: 400 };
-  }
 
   return { json: envCreds };
 }
