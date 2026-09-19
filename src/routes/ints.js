@@ -149,10 +149,15 @@ async function fetchLionbridgeToken(service) {
  * the raw response is passed through unchanged rather than reshaped.
  * @param {Object} service - Resolved env credentials (userIdentifier, userSecret, authEndpoint).
  * `userId` is also accepted as an alias for `userIdentifier`, for configs predating the rename.
+ * `authEndpoint` defaults to `https://api.smartling.com` when not provided.
  * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
  */
 export async function fetchSmartlingToken(service) {
-  const { userIdentifier = service.userId, userSecret, authEndpoint } = service;
+  const {
+    userIdentifier = service.userId,
+    userSecret,
+    authEndpoint = 'https://api.smartling.com',
+  } = service;
   if (!authEndpoint || !userIdentifier || !userSecret) {
     return { error: 'Missing Smartling authEndpoint/userIdentifier/userSecret.', status: 400 };
   }
