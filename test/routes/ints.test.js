@@ -78,10 +78,16 @@ describe('fetchSmartlingToken', () => {
     assert.deepEqual(calledBody, { userIdentifier: 'new-user-id', userSecret: 'secret' });
   });
 
-  it('returns a 400 when authEndpoint is missing', async () => {
-    const result = await fetchSmartlingToken({ userIdentifier: 'user-id', userSecret: 'secret' });
-    assert.equal(result.status, 400);
-    assert.match(result.error, /authEndpoint/);
+  it('defaults authEndpoint to https://api.smartling.com when not provided', async () => {
+    let calledUrl;
+    globalThis.fetch = async (url) => {
+      calledUrl = url;
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    };
+
+    await fetchSmartlingToken({ userIdentifier: 'user-id', userSecret: 'secret' });
+
+    assert.equal(calledUrl, 'https://api.smartling.com/auth-api/v2/authenticate');
   });
 
   it('returns a 400 when both userIdentifier and userId are missing', async () => {
