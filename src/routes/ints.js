@@ -229,12 +229,31 @@ export async function fetchDeepLToken(service) {
   return { json: { access_token: apiKey }, status: 200 };
 }
 
+/**
+ * Resolves the site's configured LILT API key. Like DeepL, LILT has no OAuth exchange -
+ * the API key itself is the long-lived credential LILT expects on every request (as the
+ * `key` query parameter). Routing it through da-etc still keeps the raw key out of the
+ * site's editable config sheet and the browser's own request path, matching the other
+ * connectors' security model, even though there's no token to refresh.
+ * @param {Object} service - Resolved env credentials (apiKey)
+ * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
+ */
+export async function fetchLiltToken(service) {
+  const { apiKey } = service;
+  if (!apiKey) {
+    return { error: 'Missing LILT apiKey.', status: 400 };
+  }
+
+  return { json: { access_token: apiKey }, status: 200 };
+}
+
 const TOKEN_FETCHERS = {
   trados: fetchTradosToken,
   lionbridge: fetchLionbridgeToken,
   smartling: fetchSmartlingToken,
   globallink: fetchGlobalLinkToken,
   deepl: fetchDeepLToken,
+  lilt: fetchLiltToken,
 };
 
 function handleError({ error, status }) {
