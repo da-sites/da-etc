@@ -328,5 +328,25 @@ export default async function intRoute({
     });
   }
 
+  // Static-key services (DeepL, LILT) have no real token to refresh, so their browser-side
+  // isConnected() check only ever needs to know whether a key is configured - never the key
+  // itself. This reuses the same credential resolution as `login` but discards the resolved
+  // token, so the raw key never appears in a response the browser can see.
+  if (fetchToken && action === 'status') {
+    const credsResult = await fetchEnvCreds(org, site, authorization, serviceEnv);
+    if (credsResult.error) {
+      return new Response(JSON.stringify({ connected: false, error: credsResult.error }), {
+        status: 200,
+        headers: DEF_HEADERS,
+      });
+    }
+
+    const tokenResult = await fetchToken(credsResult.json);
+    return new Response(JSON.stringify({ connected: !tokenResult.error }), {
+      status: 200,
+      headers: DEF_HEADERS,
+    });
+  }
+
   return handleError({ error: 'Route note supported.', status: 405 });
 }
