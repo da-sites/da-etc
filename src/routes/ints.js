@@ -16,6 +16,24 @@ const BASE_OPTS = {
   headers: { 'Content-Type': 'application/json' },
 };
 
+/**
+ * Checks a service's resolved config for missing required values and, if any are
+ * missing, returns a 400 error naming each one. Used by every token fetcher so
+ * config errors consistently say exactly which value(s) are absent.
+ * @param {string} serviceName - Human-readable service name for the error message
+ * @param {Object} fields - Map of required field name to its resolved value
+ * @returns {Object|null} `{ error, status: 400 }` if any field is missing, else `null`
+ */
+function missingConfigError(serviceName, fields) {
+  const missing = Object.entries(fields)
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+  if (!missing.length) {
+    return null;
+  }
+  return { error: `Missing ${serviceName} service config: ${missing.join(', ')}.`, status: 400 };
+}
+
 async function fetchTranslateConfig(org, site, authorization) {
   const opts = { headers: { Authorization: authorization } };
 
@@ -91,8 +109,9 @@ async function fetchServiceKey(keyPath, authorization) {
  */
 async function fetchTradosToken(service) {
   const { clientId, clientSecret, authEndpoint } = service;
-  if (!authEndpoint || !clientId || !clientSecret) {
-    return { error: 'Missing Trados authEndpoint/clientId/clientSecret.', status: 400 };
+  const missingConfig = missingConfigError('Trados', { authEndpoint, clientId, clientSecret });
+  if (missingConfig) {
+    return missingConfig;
   }
 
   const body = JSON.stringify({
@@ -118,8 +137,9 @@ async function fetchTradosToken(service) {
  */
 async function fetchLionbridgeToken(service) {
   const { clientId, clientSecret, authEndpoint } = service;
-  if (!authEndpoint || !clientId || !clientSecret) {
-    return { error: 'Missing Lionbridge authEndpoint/clientId/clientSecret.', status: 400 };
+  const missingConfig = missingConfigError('Lionbridge', { authEndpoint, clientId, clientSecret });
+  if (missingConfig) {
+    return missingConfig;
   }
 
   const body = new URLSearchParams({
@@ -158,8 +178,9 @@ export async function fetchSmartlingToken(service) {
     userSecret,
     authEndpoint = 'https://api.smartling.com',
   } = service;
-  if (!authEndpoint || !userIdentifier || !userSecret) {
-    return { error: 'Missing Smartling authEndpoint/userIdentifier/userSecret.', status: 400 };
+  const missingConfig = missingConfigError('Smartling', { authEndpoint, userIdentifier, userSecret });
+  if (missingConfig) {
+    return missingConfig;
   }
 
   const body = JSON.stringify({ userIdentifier, userSecret });
@@ -185,8 +206,11 @@ export async function fetchGlobalLinkToken(service) {
   const {
     clientId, clientSecret, endpoint, username, password,
   } = service;
-  if (!endpoint || !clientId || !clientSecret || !username || !password) {
-    return { error: 'Missing GlobalLink endpoint/clientId/clientSecret/username/password.', status: 400 };
+  const missingConfig = missingConfigError('GlobalLink', {
+    endpoint, clientId, clientSecret, username, password,
+  });
+  if (missingConfig) {
+    return missingConfig;
   }
 
   const body = new URLSearchParams({
@@ -204,6 +228,7 @@ export async function fetchGlobalLinkToken(service) {
   };
   const resp = await fetch(`${endpoint}/oauth/token`, opts);
   if (!resp.ok) {
+    console.log('fetchGlobalLinkToken: error response', resp.status, resp);
     return { error: 'Could not get token', status: resp.status };
   }
   const json = await resp.json();
@@ -222,8 +247,9 @@ export async function fetchGlobalLinkToken(service) {
  */
 export async function fetchDeepLToken(service) {
   const { apiKey } = service;
-  if (!apiKey) {
-    return { error: 'Missing DeepL apiKey.', status: 400 };
+  const missingConfig = missingConfigError('DeepL', { apiKey });
+  if (missingConfig) {
+    return missingConfig;
   }
 
   return { json: { access_token: apiKey }, status: 200 };
@@ -253,6 +279,9 @@ function handleError({ error, status }) {
  */
 async function fetchEnvCreds(org, site, authorization, serviceEnv) {
   const cfgResult = await fetchTranslateConfig(org, site, authorization);
+
+  console.log('intRoute: cfgResult', cfgResult);
+
   if (cfgResult.error) {
     return cfgResult;
   }
