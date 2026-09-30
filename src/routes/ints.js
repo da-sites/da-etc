@@ -256,6 +256,12 @@ const TOKEN_FETCHERS = {
   lilt: fetchLiltToken,
 };
 
+// Services whose "token" is a long-lived static key with no OAuth exchange. Only these
+// are safe to probe with `status`, since checking them doesn't call out to a third-party
+// auth endpoint or spend/rotate real credentials the way the OAuth connectors' fetchXToken
+// implementations do.
+const STATIC_KEY_SERVICES = new Set(['deepl', 'lilt']);
+
 function handleError({ error, status }) {
   return new Response(JSON.stringify(error), { status, headers: DEF_HEADERS });
 }
@@ -321,7 +327,6 @@ export default async function intRoute({
     if (tokenResult.error) {
       return handleError(tokenResult);
     }
-    console.log(tokenResult);
     return new Response(JSON.stringify(tokenResult.json), {
       status: tokenResult.status,
       headers: DEF_HEADERS,
@@ -331,8 +336,10 @@ export default async function intRoute({
   // Static-key services (DeepL, LILT) have no real token to refresh, so their browser-side
   // isConnected() check only ever needs to know whether a key is configured - never the key
   // itself. This reuses the same credential resolution as `login` but discards the resolved
-  // token, so the raw key never appears in a response the browser can see.
-  if (fetchToken && action === 'status') {
+  // token, so the raw key never appears in a response the browser can see. Restricted to
+  // STATIC_KEY_SERVICES so this never triggers a real OAuth exchange against a third-party
+  // auth endpoint for the other connectors.
+  if (STATIC_KEY_SERVICES.has(service) && fetchToken && action === 'status') {
     const credsResult = await fetchEnvCreds(org, site, authorization, serviceEnv);
     if (credsResult.error) {
       return new Response(JSON.stringify({ connected: false, error: credsResult.error }), {

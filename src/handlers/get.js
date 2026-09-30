@@ -9,7 +9,9 @@ export default async function getHandler({ req, env }) {
   // HLX6-flavored APIs are org-scoped
   const [org, _, site, api, service, action] = pathname.slice(1).split('/');
 
-  if (api === 'integrations') {
+  // Only `status` is safe over GET: it never returns a secret, unlike `login`, which must
+  // stay POST-only since GET requests can be cached, prefetched, or logged by intermediaries.
+  if (api === 'integrations' && action === 'status') {
     return intRoute({
       req, env, org, site, service, action,
     });
