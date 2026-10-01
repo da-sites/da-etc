@@ -102,6 +102,12 @@ describe('fetchSmartlingToken', () => {
     assert.match(result.error, /userSecret/);
   });
 
+  it('lists each missing service config value', async () => {
+    const result = await fetchSmartlingToken({});
+    assert.equal(result.status, 400);
+    assert.equal(result.error, 'Missing Smartling service config: userIdentifier, userSecret.');
+  });
+
   it('surfaces the upstream status when the token exchange fails', async () => {
     globalThis.fetch = async () => ({ ok: false, status: 401 });
 

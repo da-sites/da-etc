@@ -107,6 +107,15 @@ describe('fetchGlobalLinkToken', () => {
     assert.match(result.error, /password/);
   });
 
+  it('lists each missing service config value', async () => {
+    const result = await fetchGlobalLinkToken({
+      clientId: 'client-id',
+      password: 'user-password',
+    });
+    assert.equal(result.status, 400);
+    assert.equal(result.error, 'Missing GlobalLink service config: endpoint, clientSecret, username.');
+  });
+
   it('surfaces the upstream status when the token exchange fails', async () => {
     globalThis.fetch = async () => ({ ok: false, status: 401 });
 
