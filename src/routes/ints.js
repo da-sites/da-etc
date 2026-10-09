@@ -384,5 +384,5 @@ export default async function intRoute({
     });
   }
 
-  return handleError({ error: 'Route note supported.', status: 405 });
+  return handleError({ error: 'Route not supported.', status: 405 });
 }
