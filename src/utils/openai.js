@@ -1,3 +1,5 @@
+import { logError } from './response.js';
+
 export default async function extractTags({ html, env }) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -39,7 +41,11 @@ export default async function extractTags({ html, env }) {
     })
   });
 
+  if (!response.ok) {
+    logError('OpenAI request failed', { status: response.status });
+    throw new Error('OpenAI request failed');
+  }
+
   const data = await response.json();
-  console.log(data);
   return JSON.parse(data.choices[0].message.content);
 }

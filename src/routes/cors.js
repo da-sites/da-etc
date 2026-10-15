@@ -1,17 +1,23 @@
-import { DEF_HEADERS } from '../utils/constants.js';
+import { errorResponse } from '../utils/response.js';
 
 export default async function corsRoute({ req }) {
   const url = new URL(req.url);
   const targetUrl = url.searchParams.get('url');
 
   if (!targetUrl) {
-    return new Response(JSON.stringify({ error: 'Missing target URL' }), {
-      status: 400,
-      headers: DEF_HEADERS
-    });
+    return errorResponse(400, 'Missing target URL');
   }
 
-  const decodedUrl = decodeURIComponent(targetUrl);
+  let decodedUrl;
+  try {
+    decodedUrl = decodeURIComponent(targetUrl);
+
+    if (!['http:', 'https:'].includes(new URL(decodedUrl).protocol)) {
+      return errorResponse(400, 'Invalid target URL');
+    }
+  } catch {
+    return errorResponse(400, 'Invalid target URL');
+  }
 
   const headers = new Headers(req.headers);
   headers.delete('host');

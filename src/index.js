@@ -13,32 +13,56 @@ import optionsHandler from './handlers/options.js';
 import postHandler from './handlers/post.js';
 import getHandler from './handlers/get.js';
 
-import { DEF_HEADERS } from './utils/constants.js';
+import { errorResponse, logUnhandled } from './utils/response.js';
+
+/**
+ * Maps a request path to a fixed route label for logging.
+ * @param {string} pathname - Request URL pathname
+ * @returns {string} 'cors', 'tags', 'integrations' or 'other'
+ */
+function routeLabel(pathname) {
+  if (pathname.startsWith('/cors')) {
+    return 'cors';
+  }
+  if (pathname.startsWith('/tags')) {
+    return 'tags';
+  }
+  if (pathname.slice(1).split('/')[3] === 'integrations') {
+    return 'integrations';
+  }
+  return 'other';
+}
+
+/**
+ * Dispatches a request to its method handler.
+ * @param {Request} req - Incoming request
+ * @param {Object} env - Worker environment bindings
+ * @returns {Promise<Response|null>} Handler response, or null if the route is unhandled
+ */
+function dispatch(req, env) {
+  switch (req.method) {
+    case 'OPTIONS':
+      return optionsHandler({ req, env });
+    case 'POST':
+    case 'PUT':
+    case 'DELETE':
+      return postHandler({ req, env });
+    case 'HEAD':
+    case 'GET':
+      return getHandler({ req, env });
+    default:
+      return errorResponse(405, 'Method not allowed');
+  }
+}
 
 export default {
   async fetch(req, env) {
     try {
-      switch (req.method) {
-        case 'OPTIONS':
-          return await optionsHandler({ req, env });
-        case 'POST':
-          return await postHandler({ req, env });
-        case 'PUT':
-          return await postHandler({ req, env });
-        case 'HEAD':
-          return await getHandler({ req, env });
-        case 'GET':
-          return await getHandler({ req, env });
-        case 'DELETE':
-          return await postHandler({ req, env });
-        default:
-          return new Response('Method not allowed', { status: 405, headers: DEF_HEADERS });
-      }
+      const response = await dispatch(req, env);
+      return response ?? errorResponse(404, 'Not found');
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: DEF_HEADERS
-      });
+      logUnhandled(error, { method: req.method, route: routeLabel(new URL(req.url).pathname) });
+      return errorResponse(500, 'Internal server error');
     }
-  }
+  },
 };
