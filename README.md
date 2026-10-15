@@ -88,6 +88,7 @@ src/
     constants.js      Default response headers, allowed CORS origins
     html.js           HTML → plain text cleanup
     openai.js         OpenAI chat completion call for tag extraction
+    response.js       JSON error responses and safe error logging helpers
 ```
 
 All errors return JSON shaped `{ "error": "<message>" }`. Unhandled routes return
