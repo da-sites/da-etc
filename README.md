@@ -66,8 +66,8 @@ Given an `Authorization` header for the DA admin API, this:
    the configured `apiKey` is itself the long-lived credential, so it's
    simply echoed back as the `access_token`.
 
-Returns the token response, or an error/status code if any upstream
-step fails. This keeps the credentials out of the browser entirely — 
+Returns the token response, or a `{ error }` body with the upstream status
+code if any upstream step fails. This keeps the credentials out of the browser entirely — 
 the client only ever calls this endpoint with its own DA session auth, 
 never the third-party service's credentials.
 
@@ -88,10 +88,14 @@ src/
     constants.js      Default response headers, allowed CORS origins
     html.js           HTML → plain text cleanup
     openai.js         OpenAI chat completion call for tag extraction
+    response.js       JSON error responses and safe error logging helpers
 ```
 
-Unhandled routes return `null`, which Cloudflare turns into an empty 200
-response; unknown HTTP methods return `405`.
+All errors return JSON shaped `{ "error": "<message>" }`. Unhandled routes return
+`404`, unknown HTTP methods `405`, and unexpected failures a generic `500`
+(`Internal server error`) with no details in the body. Only errors are logged
+(`console.error`, structured JSON); logs never include credentials, request or
+upstream bodies, URLs, or raw error messages.
 
 ## Development
 
