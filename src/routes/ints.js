@@ -273,6 +273,22 @@ export async function fetchLiltToken(service) {
   return { json: { access_token: apiKey }, status: 200 };
 }
 
+/**
+ * Resolves the site's configured Translated (TranslationOS) API key. TranslationOS has no
+ * OAuth exchange; the key is sent as the `x-api-key` header on every request, so it is
+ * returned as the access token without a network call.
+ * @param {Object} service - Resolved env credentials (apiKey)
+ * @returns {Promise<Object>} `{ json, status }` on success, or `{ error, status }` on failure
+ */
+export async function fetchTranslatedToken(service) {
+  const { apiKey } = service;
+  if (!apiKey) {
+    return { error: 'Missing Translated apiKey.', status: 400 };
+  }
+
+  return { json: { access_token: apiKey }, status: 200 };
+}
+
 const TOKEN_FETCHERS = {
   trados: fetchTradosToken,
   lionbridge: fetchLionbridgeToken,
@@ -280,13 +296,14 @@ const TOKEN_FETCHERS = {
   globallink: fetchGlobalLinkToken,
   deepl: fetchDeepLToken,
   lilt: fetchLiltToken,
+  translated: fetchTranslatedToken,
 };
 
 // Services whose "token" is a long-lived static key with no OAuth exchange. Only these
 // are safe to probe with `status`, since checking them doesn't call out to a third-party
 // auth endpoint or spend/rotate real credentials the way the OAuth connectors' fetchXToken
 // implementations do.
-const STATIC_KEY_SERVICES = new Set(['deepl', 'lilt']);
+const STATIC_KEY_SERVICES = new Set(['deepl', 'lilt', 'translated']);
 
 function handleError({ error, status }) {
   return new Response(JSON.stringify(error), { status, headers: DEF_HEADERS });

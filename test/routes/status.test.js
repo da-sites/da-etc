@@ -47,6 +47,25 @@ describe('intRoute status action', () => {
     assert.doesNotMatch(text, /super-secret-key/);
   });
 
+  it('reports connected for Translated without echoing the resolved key', async () => {
+    globalThis.fetch = mockConfigFetch([
+      { key: 'translation.service.name', value: 'translated' },
+      { key: 'translation.service.prod.apiKey', value: 'translated-secret' },
+    ]);
+
+    const req = new Request('https://da-etc.example/acme/sites/mysite/integrations/translated/status?env=prod', {
+      headers: { authorization: '******' },
+    });
+    const resp = await intRoute({
+      req, org: 'acme', site: 'mysite', service: 'translated', action: 'status',
+    });
+    const body = await resp.json();
+
+    assert.equal(resp.status, 200);
+    assert.deepEqual(body, { connected: true });
+    assert.doesNotMatch(JSON.stringify(body), /translated-secret/);
+  });
+
   it('reports not connected when no key is configured for the env', async () => {
     globalThis.fetch = mockConfigFetch([
       { key: 'translation.service.name', value: 'lilt' },
