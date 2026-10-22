@@ -1,42 +1,53 @@
+/*
+ * Copyright 2026 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 export default async function extractTags({ html, env }) {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       model: 'gpt-5-nano',
       messages: [
         {
           role: 'system',
-          content: 'Extract 5-10 relevant keywords or tags from the provided text. Return only a JSON array of keywords.'
+          content: 'Extract 5-10 relevant keywords or tags from the provided text. Return only a JSON array of keywords.',
         },
         {
           role: 'user',
-          content: html.substring(0, 4000)
-        }
+          content: html.substring(0, 4000),
+        },
       ],
       response_format: {
-        type: "json_schema",
+        type: 'json_schema',
         json_schema: {
-          name: "keyword_extraction",
+          name: 'keyword_extraction',
           schema: {
-            type: "object",
+            type: 'object',
             properties: {
               tags: {
-                type: "array",
-                items: { type: "string" },
+                type: 'array',
+                items: { type: 'string' },
                 minItems: 5,
-                maxItems: 10
-              }
+                maxItems: 10,
+              },
             },
-            required: ["tags"],
-            additionalProperties: false
-          }
-        }
-      }
-    })
+            required: ['tags'],
+            additionalProperties: false,
+          },
+        },
+      },
+    }),
   });
 
   const data = await response.json();
