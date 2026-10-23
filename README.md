@@ -106,6 +106,8 @@ npm run dev          # wrangler dev — local development server
 npm run deploy:prod   # wrangler deploy
 ```
 
+The `Deploy to production` GitHub Action deploys with `cloudflare/wrangler-action` on every push to `main` (or manually via `workflow_dispatch`). It requires the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+
 ### Linting
 
 ```bash
