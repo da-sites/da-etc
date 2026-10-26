@@ -17,15 +17,21 @@ export default async function postHandler({ req, env }) {
   const { pathname } = new URL(req.url);
 
   // Legacy APIs
-  if (pathname.startsWith('/cors')) return corsRoute({ req, env });
+  if (pathname.startsWith('/cors')) {
+    return corsRoute({ req, env });
+  }
 
-  if (pathname.startsWith('/tags')) return tagsRoute({ req, env });
+  if (pathname.startsWith('/tags')) {
+    return tagsRoute({ req, env });
+  }
 
   // HLX6-flavored APIs are org-scoped
   const [org, _, site, api, service, action] = pathname.slice(1).split('/');
 
   if (api === 'integrations') {
-    return intRoute({ req, env, org, site, service, action });
+    return intRoute({
+      req, env, org, site, service, action,
+    });
   }
 
   return null;
