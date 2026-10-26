@@ -10,6 +10,7 @@
  * governing permissions and limitations under the License.
  */
 import { DEF_HEADERS } from '../utils/constants.js';
+import { errorResponse, logError } from '../utils/response.js';
 
 const BASE_OPTS = {
   method: 'POST',
@@ -39,6 +40,7 @@ async function fetchTranslateConfig(org, site, authorization) {
 
   const resp = await fetch(`https://admin.da.live/source/${org}/${site}/.da/translate.json`, opts);
   if (!resp.ok) {
+    logError('Translate config fetch failed', { status: resp.status });
     return {
       error: 'Error fetching translate config from DA.',
       status: resp.status,
@@ -86,19 +88,15 @@ function formatServiceKey(json) {
 }
 
 async function fetchServiceKey(keyPath, authorization) {
-  console.log('fetchServiceKey: fetching', keyPath);
   const resp = await fetch(keyPath, { headers: { Authorization: authorization } });
-  console.log('fetchServiceKey: response status', resp.status, resp.statusText);
   if (!resp.ok) {
-    const text = await resp.text().catch(() => '<unreadable body>');
-    console.log('fetchServiceKey: error body', text);
+    logError('Service key fetch failed', { status: resp.status });
     return {
       error: 'Error fetching service key from DA.',
       status: resp.status,
     };
   }
   const json = await resp.json();
-  console.log('fetchServiceKey: json keys', Object.keys(json));
   return { json };
 }
 
@@ -124,6 +122,7 @@ async function fetchTradosToken(service) {
   const opts = { ...BASE_OPTS, body };
   const resp = await fetch(authEndpoint, opts);
   if (!resp.ok) {
+    logError('Token request failed', { service: 'trados', status: resp.status });
     return { error: 'Could not get token', status: resp.status };
   }
   const json = await resp.json();
@@ -155,6 +154,7 @@ async function fetchLionbridgeToken(service) {
   };
   const resp = await fetch(authEndpoint, opts);
   if (!resp.ok) {
+    logError('Token request failed', { service: 'lionbridge', status: resp.status });
     return { error: 'Could not get token', status: resp.status };
   }
   const json = await resp.json();
@@ -187,6 +187,7 @@ export async function fetchSmartlingToken(service) {
   const opts = { ...BASE_OPTS, body };
   const resp = await fetch(`${authEndpoint}/auth-api/v2/authenticate`, opts);
   if (!resp.ok) {
+    logError('Token request failed', { service: 'smartling', status: resp.status });
     return { error: 'Could not get token', status: resp.status };
   }
   const json = await resp.json();
@@ -228,7 +229,7 @@ export async function fetchGlobalLinkToken(service) {
   };
   const resp = await fetch(`${endpoint}/oauth/token`, opts);
   if (!resp.ok) {
-    console.log('fetchGlobalLinkToken: error response', resp.status, resp);
+    logError('Token request failed', { service: 'globallink', status: resp.status });
     return { error: 'Could not get token', status: resp.status };
   }
   const json = await resp.json();
@@ -288,10 +289,6 @@ const TOKEN_FETCHERS = {
 // implementations do.
 const STATIC_KEY_SERVICES = new Set(['deepl', 'lilt']);
 
-function handleError({ error, status }) {
-  return new Response(JSON.stringify(error), { status, headers: DEF_HEADERS });
-}
-
 /**
  * Resolves the client credentials for a service/env by fetching the site's
  * translate config and, if configured, a referenced service key document.
@@ -305,15 +302,11 @@ function handleError({ error, status }) {
 async function fetchEnvCreds(org, site, authorization, serviceEnv) {
   const cfgResult = await fetchTranslateConfig(org, site, authorization);
 
-  console.log('intRoute: cfgResult', cfgResult);
-
   if (cfgResult.error) {
     return cfgResult;
   }
 
   const svcCfg = formatConfig(cfgResult.json);
-
-  console.log('intRoute: svcCfg', { name: svcCfg.name, keyPath: svcCfg.keyPath, envs: Object.keys(svcCfg.envs) });
 
   let envCreds = svcCfg.envs[serviceEnv] ?? {};
   if (svcCfg.keyPath) {
@@ -324,8 +317,6 @@ async function fetchEnvCreds(org, site, authorization, serviceEnv) {
     const keyEnvs = formatServiceKey(keyResult.json);
     envCreds = { ...envCreds, ...(keyEnvs[serviceEnv] ?? {}) };
   }
-
-  console.log('intRoute: envCreds for', serviceEnv, envCreds ? Object.keys(envCreds) : '<none>');
 
   return { json: envCreds };
 }
@@ -338,10 +329,7 @@ export default async function intRoute({
   const serviceEnv = searchParams.get('env') ?? 'prod';
 
   if (!authorization) {
-    return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
-      status: 401,
-      headers: DEF_HEADERS,
-    });
+    return errorResponse(401, 'Missing authorization header');
   }
 
   const fetchToken = TOKEN_FETCHERS[service];
@@ -349,12 +337,12 @@ export default async function intRoute({
   if (fetchToken && action === 'login') {
     const credsResult = await fetchEnvCreds(org, site, authorization, serviceEnv);
     if (credsResult.error) {
-      return handleError(credsResult);
+      return errorResponse(credsResult.status, credsResult.error);
     }
 
     const tokenResult = await fetchToken(credsResult.json);
     if (tokenResult.error) {
-      return handleError(tokenResult);
+      return errorResponse(tokenResult.status, tokenResult.error);
     }
     return new Response(JSON.stringify(tokenResult.json), {
       status: tokenResult.status,
@@ -384,5 +372,5 @@ export default async function intRoute({
     });
   }
 
-  return handleError({ error: 'Route not supported.', status: 405 });
+  return errorResponse(405, 'Route not supported.');
 }

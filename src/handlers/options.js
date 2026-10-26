@@ -9,7 +9,8 @@
  * OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-import { ALLOWED_DOMAINS, DEF_HEADERS } from '../utils/constants.js';
+import { ALLOWED_DOMAINS } from '../utils/constants.js';
+import { errorResponse } from '../utils/response.js';
 
 export default async function optionsHandler({ req }) {
   const origin = req.headers.get('origin');
@@ -31,5 +32,5 @@ export default async function optionsHandler({ req }) {
     });
   }
 
-  return new Response('Method not allowed', { status: 405, headers: DEF_HEADERS });
+  return errorResponse(405, 'Method not allowed');
 }
