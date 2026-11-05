@@ -3,7 +3,7 @@
 A small Cloudflare Worker that hosts a handful of miscellaneous HTTP endpoints
 used by Adobe Document Authoring (DA) / AEM Edge Delivery tooling: a CORS
 proxy, an AI-powered tag extractor, and translation-integration login
-endpoints (Trados, Lionbridge, Smartling, GlobalLink, DeepL, LILT).
+endpoints (Trados, Lionbridge, Smartling, GlobalLink, DeepL, LILT, Translated).
 
 ## Endpoints
 
@@ -49,6 +49,7 @@ POST /:org/config/:site/integrations/smartling/login?env=prod
 POST /:org/config/:site/integrations/globallink/login?env=prod
 POST /:org/config/:site/integrations/deepl/login?env=prod
 POST /:org/config/:site/integrations/lilt/login?env=prod
+POST /:org/config/:site/integrations/translated/login?env=prod
 ```
 
 Given an `Authorization` header for the DA admin API, this:
@@ -62,7 +63,7 @@ Given an `Authorization` header for the DA admin API, this:
    `userSecret` pair via its own `auth-api/v2/authenticate` endpoint; 
    GlobalLink uses a resource-owner `password` grant (client
    id/secret via Basic auth, plus a per-user username/password resolved
-   from the same config). DeepL and LILT have no OAuth exchange at all —
+   from the same config). DeepL, LILT and Translated have no OAuth exchange at all —
    the configured `apiKey` is itself the long-lived credential, so it's
    simply echoed back as the `access_token`.
 
@@ -83,7 +84,7 @@ src/
   routes/
     cors.js           CORS proxy implementation
     tags.js           Tag extraction route
-    ints.js           Third-party integration routes (Trados, Lionbridge, Smartling, GlobalLink, DeepL, LILT)
+    ints.js           Third-party integration routes (Trados, Lionbridge, Smartling, GlobalLink, DeepL, LILT, Translated)
   utils/
     constants.js      Default response headers, allowed CORS origins
     html.js           HTML → plain text cleanup
